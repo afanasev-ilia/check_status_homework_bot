@@ -16,5 +16,10 @@ Python 3.7
 pip install -r requirements.txt
 ``` 
 
+### Cгенерировать .env файл
+```
+cp .env.example .env
+``` 
+
 ### Автор
 Илья Афанасьев
