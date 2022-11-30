@@ -6,12 +6,14 @@ from http import HTTPStatus
 from logging import StreamHandler
 from typing import Dict
 
-import requests
-import telegram
 from dotenv import load_dotenv
-from telegram import Bot
 
 from exceptions import ApiNot200StatusResponse
+
+import requests
+
+import telegram
+from telegram import Bot
 
 load_dotenv()
 
@@ -154,7 +156,7 @@ def main() -> None:
                 timestamp = response.get('current_date')
             else:
                 logger.debug('Изменений в статусе проверки ДЗ нет')
-        except Exception as error:
+        except Exception as error:  # noqa: PIE786
             message = f'Сбой в работе программы: {error}'
             logger.error(message)
             if message != last_message:
