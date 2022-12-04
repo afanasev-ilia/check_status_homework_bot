@@ -1,2 +1,2 @@
-class ApiNot200StatusResponse(Exception):
-    """API Практикум.Домашка возвращает код, отличный от 200."""
+class NotSendMessageTelegram(Exception):
+    """Ошибка в работе TelegramBot, cообщениe не отправлено"""
