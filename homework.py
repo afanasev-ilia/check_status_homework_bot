@@ -48,6 +48,7 @@ logger.addHandler(handler)
 
 
 def func_logger(func: typing.Any) -> typing.Any:
+    """Декоратор логирования функций."""
 
     def inner(*args: typing.Any, **kwargs: typing.Any) -> typing.Any:
         ret = func(*args, **kwargs)
