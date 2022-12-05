@@ -6,14 +6,12 @@ import typing
 from http import HTTPStatus
 from logging import StreamHandler
 
+import requests
+import telegram
 from dotenv import load_dotenv
+from pathlib import Path
 
 from exceptions import NotSendMessageTelegram
-
-import requests
-
-import telegram
-
 
 load_dotenv()
 
@@ -21,7 +19,7 @@ PRACTICUM_TOKEN = os.getenv('PRACTICUM_TOKEN')
 TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
 TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
 
-RETRY_PERIOD = 600  # 10 * 60 sec
+RETRY_PERIOD = 600  # 10 мин * 60 сек
 ENDPOINT = 'https://practicum.yandex.ru/api/user_api/homework_statuses/'
 HEADERS = {'Authorization': f'OAuth {PRACTICUM_TOKEN}'}
 
@@ -33,8 +31,8 @@ HOMEWORK_VERDICTS = {
 
 logging.basicConfig(
     level=logging.INFO,
-    filename='program.log',
-    filemode='a',
+    filename=Path('program.log'),
+    filemode='w',
     format=(
         '%(asctime)s - %(levelname)s - %(lineno)d - %(message)s - %(funcName)s'
     ),
@@ -49,6 +47,21 @@ handler.setFormatter(formatter)
 logger.addHandler(handler)
 
 
+def func_logger(func: typing.Any) -> typing.Any:
+
+    def inner(*args: typing.Any, **kwargs: typing.Any) -> typing.Any:
+        ret = func(*args, **kwargs)
+        logger.debug(
+            'Вызов функции "%s" с "%s" вернул "%s"',
+            func.__name__,
+            (args, kwargs),
+            ret,
+        )
+        return ret
+
+    return inner
+
+
 def check_tokens() -> None:
     """Проверяет доступность переменных окружения.
 
@@ -59,13 +72,15 @@ def check_tokens() -> None:
     empty_tokens = [
         token
         for token in ('PRACTICUM_TOKEN', 'TELEGRAM_TOKEN', 'TELEGRAM_CHAT_ID')
-        if globals()[token] is None
+        if globals().get(token) is None
     ]
     if empty_tokens:
-        logging.critical('Переменные окружения %s недоступны', empty_tokens)
+        logging.critical('Переменные окружения "%s" недоступны', empty_tokens)
         raise SystemExit(f'Переменные окружения "{empty_tokens}" недоступны')
 
 
+# @func_logger при добавление декоратора не проходит Pytest
+# (AssertionError: Убедитесь, что в функции `send_message` есть docstring.)
 def send_message(bot: telegram.Bot, message: str) -> None:
     """Отправляет сообщение в Telegram чат.
 
@@ -163,9 +178,10 @@ def parse_status(homework: typing.Dict[str, typing.Any]) -> str:
         name, status = homework['homework_name'], homework['status']
     except KeyError:
         logging.error('Значение по ключу не доступно')
-    if status not in HOMEWORK_VERDICTS:
+    try:
+        verdict = HOMEWORK_VERDICTS[status]
+    except KeyError:
         raise KeyError('Недокументированный статус домашней работы')
-    verdict = HOMEWORK_VERDICTS.get(status)
     return f'Изменился статус проверки работы "{name}". {verdict}'
 
 
@@ -173,14 +189,14 @@ def main() -> None:
     """Основная логика работы бота."""
     check_tokens()
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
-    timestamp = int(time.time())
-    last_message = ''
     logging.info('Запуск Бота')
+    timestamp = int(time.time())
+    last_message = None
     while True:
         try:
             response = get_api_answer(timestamp)
-            timestamp = response.get('current_date')
             homeworks = check_response(response)
+            timestamp = response['current_date']
             if homeworks:
                 send_message(bot, parse_status(homeworks[0]))
             else:
@@ -193,6 +209,7 @@ def main() -> None:
                 last_message = message
         finally:
             time.sleep(RETRY_PERIOD)
+            logger.debug('Погружение программы в сон на %s мин', RETRY_PERIOD)
 
 
 if __name__ == '__main__':
