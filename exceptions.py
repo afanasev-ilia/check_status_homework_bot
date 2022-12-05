@@ -1,2 +1,2 @@
 class NotSendMessageTelegram(Exception):
-    """Ошибка в работе TelegramBot, cообщениe не отправлено"""
+    """Ошибка в работе TelegramBot, cообщениe не отправлено."""
