@@ -1,6 +1,6 @@
 # homework_bot
 
-[![CI](https://github.com/LihieTapki/homework_bot)
+[![CI](https://github.com/]
 
 ## Описание
 
