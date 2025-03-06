@@ -1,7 +1,5 @@
 # homework_bot
 
-[![CI](https://github.com/]
-
 ## Описание
 
 python telegram bot
